@@ -167,7 +167,9 @@ travisPrepareTaskImpl() async {
       '-fcontent_shell',
       '-dcontent_shell',
       '-o${downloadsInstallPath}',
-      '-adartium'
+      '-adartium',
+      '-e',
+      '-t${downloadsInstallPath}',
     ], script: 'darc');
 //    await installContentShell();
     log('contentShell done');
