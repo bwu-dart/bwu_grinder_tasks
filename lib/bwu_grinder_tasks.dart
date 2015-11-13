@@ -12,8 +12,9 @@ import 'src/dartformat_task.dart';
 //void clean() => defaultClean(context);
 
 const sourceDirs = const ['bin', 'example', 'lib', 'test', 'tool', 'web'];
-final existingSourceDirs =
-    sourceDirs.where((d) => new io.Directory(d).existsSync()).toList();
+final existingSourceDirs = sourceDirs
+    .where((d) => new io.Directory(d).existsSync())
+    .toList() as List<String>;
 final subProjects = getSubProjects();
 
 main(List<String> args) => grind(args);
@@ -62,7 +63,7 @@ Function analyzeTask = analyzeTaskImpl;
 bool analyzerIgnoreInfoMessages = false;
 
 analyzeTaskImpl() {
-  final args = ['check'];
+  final args = <String>['check'];
   if (analyzerIgnoreInfoMessages) {
     args.add('--ignore-infos');
   }
@@ -92,12 +93,15 @@ coverageTaskImpl() {
 Function formatTask = formatTaskImpl;
 
 formatTaskImpl() => new PubApp.global('dart_style').run(
-    ['-w']..addAll(existingSourceDirs), script: 'format');
+    (['-w']..addAll(existingSourceDirs)) as List<String>,
+    script: 'format');
 
 Function lintTask = lintTaskImpl;
 
-lintTaskImpl() => new PubApp.global('linter')
-    .run(['--stats', '-ctool/lintcfg.yaml']..addAll(existingSourceDirs));
+lintTaskImpl() => new PubApp.global('linter').run(([
+      '--stats',
+      '-ctool/lintcfg.yaml'
+    ]..addAll(existingSourceDirs)) as List<String>);
 
 Function testTask = testTaskImpl;
 
@@ -105,7 +109,7 @@ testTaskImpl(List<String> platforms,
     {bool runPubServe: false, bool runSelenium: false}) async {
 //  final seleniumJar = io.Platform.environment['SELENIUM_JAR'];
 
-  final environment = {};
+  final environment = <String, String>{};
   if (platforms.contains('content-shell')) {
     environment['PATH'] =
         '${io.Platform.environment['PATH']}:${downloadsInstallPath}/content_shell';
@@ -139,7 +143,8 @@ testTaskImpl(List<String> platforms,
 //    if (runPubServe) {
 //      args.add('--pub-serve=${pubServe.directoryPorts['test']}');
 //    }
-    new PubApp.local('test').run([]..addAll(platforms.map((p) => '-p${p}')),
+    new PubApp.local('test').run(
+        ([]..addAll(platforms.map((p) => '-p${p}'))) as List<String>,
         runOptions: new RunOptions(environment: environment));
   } finally {
 //    if (pubServe != null) {
@@ -205,7 +210,7 @@ List<io.Directory> getSubProjectsImpl() => io.Directory.current
     .where((d) => d.path.endsWith('pubspec.yaml') &&
         d.parent.absolute.path != io.Directory.current.absolute.path)
     .map((d) => d.parent)
-    .toList();
+    .toList() as List<io.Directory>;
 
 Function checkSubProjects = checkSubProjectsImpl;
 
