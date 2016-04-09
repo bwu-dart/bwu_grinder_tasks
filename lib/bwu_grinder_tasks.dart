@@ -1,8 +1,20 @@
 library bwu_grinder_tasks;
 
 import 'dart:io' as io;
-import 'package:grinder/grinder.dart';
-export 'package:grinder/grinder.dart' show DefaultTask, Depends, Task, grind;
+import 'package:grinder/grinder.dart'
+    show
+        Analyzer,
+        DefaultTask,
+        Depends,
+        Pub,
+        PubApp,
+        RunOptions,
+        Task,
+        existingSourceDirs,
+        grind,
+        log,
+        run;
+export 'package:grinder/grinder.dart' show DefaultTask, Depends, grind, Task;
 import 'src/dartformat_task.dart';
 
 // TODO(zoechi) check if version was incremented
@@ -11,75 +23,98 @@ import 'src/dartformat_task.dart';
 //@Task('Delete build directory')
 //void clean() => defaultClean(context);
 
-const sourceDirs = const ['bin', 'example', 'lib', 'test', 'tool', 'web'];
-final existingSourceDirs = sourceDirs
-    .where((d) => new io.Directory(d).existsSync())
-    .toList() as List<String>;
-final subProjects = getSubProjects();
+//const sourceDirs = const ['bin', 'example', 'lib', 'test', 'tool', 'web'];
+//final existingSourceDirs = sourceDirs
+//    .where((d) => new io.Directory(d).existsSync())
+//    .toList() as List<String>;
 
-main(List<String> args) => grind(args);
+/// Configure what sub-projects to check. By default [getSubProjects]` will be
+/// run to discover sub-projects automatically.
+final List<io.Directory> subProjects = getSubProjects();
 
+///
+dynamic main(List<String> args) => grind(args);
+
+///
 @Task('Run analyzer')
-analyze() => analyzeTask();
+dynamic analyze() => analyzeTask();
 
+///
 @Task('Runn all tests')
-test() => testTask(['vm', 'content-shell']);
+dynamic test() => testTask('grinder' /*['vm', 'content-shell']*/);
 // TODO(zoechi) fix to support other browsers
 //'dartium', 'chrome', 'phantomjs', 'firefox'
 
+///
 @Task('Run all VM tests')
-testVm() => testTask(['vm']);
+dynamic testVm() => testTask(['vm']);
 
+///
 @Task('Run all browser tests')
-testWeb() => testTask(['content-shell']);
+dynamic testWeb() => testTask(['content-shell']);
 
+///
 @DefaultTask('Check everything')
-@Depends(analyze, checkFormat, lint, test)
-check() => checkTask();
+@Depends(analyze, checkFormat, test)
+dynamic check() => checkTask();
 
+///
 @Task('Check source code format')
-checkFormat() => checkFormatTask(existingSourceDirs);
+dynamic checkFormat() =>
+    checkFormatTask(existingSourceDirs.map((dir) => dir.path));
 
-/// format-all - fix all formatting issues
+///
 @Task('Fix all source format issues')
-format() => formatTask();
+dynamic format() => formatTask();
 
+///
 @Task('Run lint checks')
-lint() => lintTask();
+@Deprecated('Linter rules are checked in the analyze task already')
+dynamic lint() => lintTask();
 
+///
 @Depends(travisPrepare, check, coverage)
 @Task('Travis')
-travis() => travisTask();
+dynamic travis() => travisTask();
 
+///
 @Task('Gather and send coverage data.')
-coverage() => coverageTask();
+dynamic coverage() => coverageTask();
 
+///
 @Task('Set up Travis prerequisites')
-travisPrepare() => travisPrepareTask();
+dynamic travisPrepare() => travisPrepareTask();
 
+/// Function to be run for the [analyze] task.
 Function analyzeTask = analyzeTaskImpl;
 
 /// Set to `true` to not fail the `analyze` task on info level analyzer messages.
 bool analyzerIgnoreInfoMessages = false;
 
-analyzeTaskImpl() {
-  final args = <String>['check'];
-  if (analyzerIgnoreInfoMessages) {
-    args.add('--ignore-infos');
-  }
-  new PubApp.global('tuneup').run(args);
+/// Default implementation for the [analyze] task.
+void analyzeTaskImpl() {
+  Analyzer.analyze(existingSourceDirs, fatalWarnings: false);
+//  final args = <String>['check'];
+//  if (analyzerIgnoreInfoMessages) {
+//    args.add('--ignore-infos');
+//  }
+//  run new PubApp.global('tuneup').run(args);
 }
 
+/// Function to be run for the [check] task.
 Function checkTask = checkTaskImpl;
 
-checkTaskImpl() {
+/// Default implementation for the [check] task.
+void checkTaskImpl() {
   run('pub', arguments: ['publish', '-n']);
   checkSubProjects();
 }
 
+/// Function to be run for the [coverage] task.
 Function coverageTask = coverageTaskImpl;
 
-coverageTaskImpl() {
+/// Default implementation for the [coverage] task.
+void coverageTaskImpl() {
   final String coverageToken = io.Platform.environment['REPO_TOKEN'];
 
   if (coverageToken != null) {
@@ -90,30 +125,42 @@ coverageTaskImpl() {
   }
 }
 
+/// Indirection that allows a custom function to be assigned for the `format`
+/// task.
 Function formatTask = formatTaskImpl;
 
-formatTaskImpl() => new PubApp.global('dart_style').run(
-    (['-w']..addAll(existingSourceDirs)) as List<String>,
-    script: 'format');
+/// Default implementation for the `format` task.
+void formatTaskImpl() {
+  new PubApp.global('dart_style').run(
+      ['-w']..addAll(existingSourceDirs.map((dir) => dir.path)),
+      script: 'format');
+}
 
+/// Indirection that allows a custom function to be assigned for the `lint` task.
+@Deprecated('Linter rules are checked in the analyze task already')
+// ignore: deprecated_member_use
 Function lintTask = lintTaskImpl;
 
-lintTaskImpl() => new PubApp.global('linter').run(([
-      '--stats',
-      '-ctool/lintcfg.yaml'
-    ]..addAll(existingSourceDirs)) as List<String>);
+/// Default implementation for the `lint` task.
+@Deprecated('Linter rules are checked in the analyze task already')
+String lintTaskImpl() {
+  return new PubApp.global('linter').run((['--stats', '-ctool/lintcfg.yaml']
+    ..addAll(existingSourceDirs.map((dir) => dir.path))));
+}
 
+/// Indirection that allows a custom function to be assigned for the `test` task.
 Function testTask = testTaskImpl;
 
-testTaskImpl(List<String> platforms,
+/// Default implementation for the `test` task.
+dynamic testTaskImpl(String preset,
     {bool runPubServe: false, bool runSelenium: false}) async {
 //  final seleniumJar = io.Platform.environment['SELENIUM_JAR'];
 
   final environment = <String, String>{};
-  if (platforms.contains('content-shell')) {
-    environment['PATH'] =
-        '${io.Platform.environment['PATH']}:${downloadsInstallPath}/content_shell';
-  }
+//  if (platforms.contains('content-shell')) {
+  environment['PATH'] =
+      '${io.Platform.environment['PATH']}:${downloadsInstallPath}/content_shell';
+//  }
 
 //  PubServe pubServe;
 //  SeleniumStandaloneServer selenium;
@@ -143,8 +190,7 @@ testTaskImpl(List<String> platforms,
 //    if (runPubServe) {
 //      args.add('--pub-serve=${pubServe.directoryPorts['test']}');
 //    }
-    new PubApp.local('test').run(
-        ([]..addAll(platforms.map((p) => '-p${p}'))) as List<String>,
+    new PubApp.local('test').run(['--preset', preset],
         runOptions: new RunOptions(environment: environment));
   } finally {
 //    if (pubServe != null) {
@@ -159,11 +205,17 @@ testTaskImpl(List<String> platforms,
 //  final chromeBin = '-Dwebdriver.chrome.bin=/usr/bin/google-chrome';
 //  final chromeDriverBin = '-Dwebdriver.chrome.driver=/usr/local/apps/webdriver/chromedriver/2.15/chromedriver_linux64/chromedriver';
 
+/// Indirection that allows a custom function to be assigned for the `travis`
+/// task.
+// The default implementation does nothing.
 Function travisTask = () {};
 
+/// Indirection that allows a custom function to be assigned for the
+/// `travisPrepare` task.
 Function travisPrepareTask = travisPrepareTaskImpl;
 
-travisPrepareTaskImpl() async {
+/// Default implementation for the `travisPrepare` task.
+dynamic travisPrepareTaskImpl() async {
   log('travisPrepareTaskImpl');
   if (doInstallContentShell) {
     log('contentShell');
@@ -193,27 +245,38 @@ travisPrepareTaskImpl() async {
   }
 }
 
+/// Configuration setting whether content-shell should be installed.
 bool doInstallContentShell = true;
+
+/// Configuration setting where to install additional tools.
 String downloadsInstallPath = '_install';
+
+/// Helper that returns the correct download channel from the Dart version.
 String get channelFromTravisDartVersion {
   final travisVersion = io.Platform.environment['TRAVIS_DART_VERSION'];
   if (travisVersion == 'dev') return 'dev/release';
   return 'stable/release';
 }
 
+/// Typedef for the function that discovers sub-projects.
 typedef List<io.Directory> GetSubProjects();
 
+/// Configure the function used to discover sub-projects.
 GetSubProjects getSubProjects = getSubProjectsImpl;
 
+/// Default implementation for `getSubProjects`
 List<io.Directory> getSubProjectsImpl() => io.Directory.current
     .listSync(recursive: true)
-    .where((d) => d.path.endsWith('pubspec.yaml') &&
+    .where((d) =>
+        d.path.endsWith('pubspec.yaml') &&
         d.parent.absolute.path != io.Directory.current.absolute.path)
     .map((d) => d.parent)
-    .toList() as List<io.Directory>;
+    .toList();
 
+/// Configure the function used to check sub-projects.
 Function checkSubProjects = checkSubProjectsImpl;
 
+/// Default implementation for `checkSubProjects.
 void checkSubProjectsImpl() {
   subProjects.forEach((p) {
     log('=== check sub-project: ${p.path} ===');
