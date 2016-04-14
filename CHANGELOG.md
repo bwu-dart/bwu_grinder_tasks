@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.1.1
+- add `runPubServe` option to the `test` task implementation that runs a `pub serve` instance when `true` is passed.
 - the `analyze` task now uses Grinders `Analyzer.analyze()` instead of running `tuneup`.
 - the `test` task doesn't use `vm` and `content-shell` as default anymore. Use `dart_test.yaml` instead to configure
   which tests to run. See https://github.com/dart-lang/test/blob/master/doc/configuration.md for details.

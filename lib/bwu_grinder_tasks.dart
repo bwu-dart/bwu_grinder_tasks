@@ -15,18 +15,14 @@ import 'package:grinder/grinder.dart'
         log,
         run;
 export 'package:grinder/grinder.dart' show DefaultTask, Depends, grind, Task;
-import 'src/dartformat_task.dart';
+import 'src/dartformat_task.dart' show checkFormatTask;
+import 'package:bwu_grinder_tasks/src/pub_serve.dart' show PubServe;
 
 // TODO(zoechi) check if version was incremented
 // TODO(zoechi) check if CHANGELOG.md contains version
 
 //@Task('Delete build directory')
 //void clean() => defaultClean(context);
-
-//const sourceDirs = const ['bin', 'example', 'lib', 'test', 'tool', 'web'];
-//final existingSourceDirs = sourceDirs
-//    .where((d) => new io.Directory(d).existsSync())
-//    .toList() as List<String>;
 
 /// Configure what sub-projects to check. By default [getSubProjects]` will be
 /// run to discover sub-projects automatically.
@@ -94,11 +90,6 @@ bool analyzerIgnoreInfoMessages = false;
 /// Default implementation for the [analyze] task.
 void analyzeTaskImpl() {
   Analyzer.analyze(existingSourceDirs, fatalWarnings: false);
-//  final args = <String>['check'];
-//  if (analyzerIgnoreInfoMessages) {
-//    args.add('--ignore-infos');
-//  }
-//  run new PubApp.global('tuneup').run(args);
 }
 
 /// Function to be run for the [check] task.
@@ -153,7 +144,9 @@ Function testTask = testTaskImpl;
 
 /// Default implementation for the `test` task.
 dynamic testTaskImpl(String preset,
-    {bool runPubServe: false, bool runSelenium: false}) async {
+    {bool runPubServe: false,
+    List<String> pubServeParameters: const <String>[],
+    bool runSelenium: false}) async {
 //  final seleniumJar = io.Platform.environment['SELENIUM_JAR'];
 
   final environment = <String, String>{};
@@ -162,19 +155,18 @@ dynamic testTaskImpl(String preset,
       '${io.Platform.environment['PATH']}:${downloadsInstallPath}/content_shell';
 //  }
 
-//  PubServe pubServe;
 //  SeleniumStandaloneServer selenium;
 //  final servers = <Future<RunProcess>>[];
 
+  PubServe pubServe;
   try {
-//    if (runPubServe) {
-//      pubServe = new PubServe();
-//      log('start pub serve');
-//      servers.add(pubServe.start(directories: const ['test']).then((_) {
-//        pubServe.stdout.listen((e) => io.stdout.add(e));
-//        pubServe.stderr.listen((e) => io.stderr.add(e));
-//      }));
-//    }
+    if (runPubServe) {
+      pubServe = new PubServe();
+      log('start pub serve');
+      await pubServe.start(directories: const ['test']);
+      io.stdout.addStream(pubServe.stdout);
+      io.stderr.addStream(pubServe.stderr);
+    }
 //    if (runSelenium) {
 //      selenium = new SeleniumStandaloneServer();
 //      log('start Selenium standalone server');
@@ -193,9 +185,9 @@ dynamic testTaskImpl(String preset,
     new PubApp.local('test').run(['--preset', preset],
         runOptions: new RunOptions(environment: environment));
   } finally {
-//    if (pubServe != null) {
-//      pubServe.stop();
-//    }
+    if (pubServe != null) {
+      pubServe.stop();
+    }
 //    if (selenium != null) {
 //      selenium.stop();
 //    }
