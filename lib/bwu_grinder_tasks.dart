@@ -36,6 +36,8 @@ import 'package:grinder/grinder.dart'
         log,
         run;
 export 'package:grinder/grinder.dart' show DefaultTask, Depends, grind, Task;
+export 'package:bwu_grinder_tasks/src/version_info_task.dart';
+
 import 'src/dartformat_task.dart' show checkFormatTask;
 import 'package:bwu_grinder_tasks/src/pub_serve.dart' show PubServe;
 
