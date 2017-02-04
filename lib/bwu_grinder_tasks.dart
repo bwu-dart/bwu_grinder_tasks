@@ -1,5 +1,26 @@
 library bwu_grinder_tasks;
 
+///
+/// Examples
+///
+/// **default**
+///
+///     export 'package:bwu_grinder_tasks/bwu_grinder_tasks.dart';
+///
+/// **Run pub serve**
+///
+///     export 'package:bwu_grinder_tasks/bwu_grinder_tasks.dart' hide main, test;
+///     import 'package:bwu_grinder_tasks/bwu_grinder_tasks.dart'
+///         show testTask, testTaskImpl, grind;
+///
+///     ///
+///     void main([List<String> args]) {
+///       testTask = () =>
+///           testTaskImpl('grinder', runPubServe: true, pubServeParameters: ['test']);
+///       grind(args);
+///     }
+///
+
 import 'dart:io' as io;
 import 'package:grinder/grinder.dart'
     show
@@ -152,7 +173,7 @@ dynamic testTaskImpl(String preset,
   final environment = <String, String>{};
 //  if (platforms.contains('content-shell')) {
   environment['PATH'] =
-      '${io.Platform.environment['PATH']}:${downloadsInstallPath}/content_shell';
+      '${io.Platform.environment['PATH']}:$downloadsInstallPath/content_shell';
 //  }
 
 //  SeleniumStandaloneServer selenium;
@@ -164,7 +185,9 @@ dynamic testTaskImpl(String preset,
       pubServe = new PubServe();
       log('start pub serve');
       await pubServe.start(directories: const ['test']);
+      // ignore: unawaited_futures
       io.stdout.addStream(pubServe.stdout);
+      // ignore: unawaited_futures
       io.stderr.addStream(pubServe.stderr);
     }
 //    if (runSelenium) {
@@ -215,15 +238,15 @@ dynamic travisPrepareTaskImpl() async {
       'down',
       '-fcontent_shell',
       '-dcontent_shell',
-      '-o${downloadsInstallPath}',
+      '-o$downloadsInstallPath',
       '-adartium',
       '-e',
-      '-t${downloadsInstallPath}',
+      '-t$downloadsInstallPath',
     ], script: 'darc');
 //    await installContentShell();
     log('contentShell done');
   }
-  String pubVar = io.Platform.environment['PUB'];
+  final pubVar = io.Platform.environment['PUB'];
   if (pubVar == 'DOWNGRADE') {
     log('downgrade');
     Pub.downgrade();

@@ -19,6 +19,7 @@ abstract class RunProcess {
 }
 
 /// Start and end a new `pub serve` instance.
+// TODO(zoechi) see also bwu_utils_dev which has a similar implementation
 class PubServe implements RunProcess {
   final StreamController<List<int>> _stdout = new StreamController<List<int>>();
   final StreamController<List<int>> _stderr = new StreamController<List<int>>();
@@ -33,7 +34,9 @@ class PubServe implements RunProcess {
   /// Create and run a `pub serve` instance.
   Future<Null> start({List<String> directories}) async {
     _process = await io.Process.start('pub', ['serve']..addAll(directories));
+    // ignore: unawaited_futures
     _stdout.addStream(_process.stdout);
+    // ignore: unawaited_futures
     _stderr.addStream(_process.stderr);
   }
 

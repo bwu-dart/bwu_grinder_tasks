@@ -1,6 +1,7 @@
 # Changelog
 
 ## 0.1.1
+- add `writeVersionInfoFile` task to create a `lib/src/version_info.dart` file providing the package version as constant.
 - add `runPubServe` option to the `test` task implementation that runs a `pub serve` instance when `true` is passed.
 - the `analyze` task now uses Grinders `Analyzer.analyze()` instead of running `tuneup`.
 - the `test` task doesn't use `vm` and `content-shell` as default anymore. Use `dart_test.yaml` instead to configure
