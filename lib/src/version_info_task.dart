@@ -6,8 +6,20 @@ import 'package:path/path.dart' as path;
 
 typedef String VersionFileTemplate(String version);
 
-String versionFileTemplate(String version) =>
-    'const String packageVersion  = \'$version\';';
+String versionFileTemplate(String version) => '''
+const String packageVersion  = \'$version\';
+final DateTime packageVersionDate =
+    DateTime.parse('${new DateTime.now().toUtc().toIso8601String()}');
+
+DateTime get _versionDate => packageVersionDate.toLocal();
+String _versionDateString;
+String get packageVersionDateString => _versionDateString ??=
+    '\${_versionDate.year}-\${_versionDate.month.toString().padLeft(2, '0')}'
+    '-\${_versionDate.day.toString().padLeft(2, '0')}'
+    ' \${_versionDate.hour.toString().padLeft(2, '0')}:'
+    '\${_versionDate.minute.toString().padLeft(2, '0')}';
+
+    ''';
 
 /// Write the package version into a Dart source file
 void writeVersionInfoFile(
