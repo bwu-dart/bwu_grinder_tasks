@@ -21,8 +21,8 @@ abstract class RunProcess {
 /// Start and end a new `pub serve` instance.
 // TODO(zoechi) see also bwu_utils_dev which has a similar implementation
 class PubServe implements RunProcess {
-  final StreamController<List<int>> _stdout = new StreamController<List<int>>();
-  final StreamController<List<int>> _stderr = new StreamController<List<int>>();
+  final StreamController<List<int>> _stdout = StreamController<List<int>>();
+  final StreamController<List<int>> _stderr = StreamController<List<int>>();
 
   @override
   Stream<List<int>> get stdout => _stdout.stream;
@@ -42,9 +42,9 @@ class PubServe implements RunProcess {
 
   /// End the `pub serve` instance.
   @override
-  bool stop([io.ProcessSignal signal = io.ProcessSignal.SIGTERM]) {
+  bool stop([io.ProcessSignal signal = io.ProcessSignal.sigterm]) {
     if (_process != null) {
-      return _process.kill(signal ?? io.ProcessSignal.SIGTERM);
+      return _process.kill(signal ?? io.ProcessSignal.sigterm);
     }
 
     return false;

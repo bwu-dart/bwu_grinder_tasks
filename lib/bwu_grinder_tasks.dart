@@ -9,14 +9,14 @@ library bwu_grinder_tasks;
 ///
 /// **Run pub serve**
 ///
-///     export 'package:bwu_grinder_tasks/bwu_grinder_tasks.dart' hide main, test;
+///   export 'package:bwu_grinder_tasks/bwu_grinder_tasks.dart' hide main, test;
 ///     import 'package:bwu_grinder_tasks/bwu_grinder_tasks.dart'
 ///         show testTask, testTaskImpl, grind;
 ///
 ///     ///
 ///     void main([List<String> args]) {
 ///       testTask = () =>
-///           testTaskImpl('grinder', runPubServe: true, pubServeParameters: ['test']);
+///    testTaskImpl('grinder', runPubServe: true, pubServeParameters: ['test']);
 ///       grind(args);
 ///     }
 ///
@@ -35,11 +35,12 @@ import 'package:grinder/grinder.dart'
         grind,
         log,
         run;
+
+import 'package:bwu_grinder_tasks/src/pub_serve.dart' show PubServe;
+import 'src/dartformat_task.dart' show checkFormatTask;
+
 export 'package:grinder/grinder.dart' show DefaultTask, Depends, grind, Task;
 export 'package:bwu_grinder_tasks/src/version_info_task.dart';
-
-import 'src/dartformat_task.dart' show checkFormatTask;
-import 'package:bwu_grinder_tasks/src/pub_serve.dart' show PubServe;
 
 // TODO(zoechi) check if version was incremented
 // TODO(zoechi) check if CHANGELOG.md contains version
@@ -107,7 +108,8 @@ dynamic travisPrepare() => travisPrepareTask();
 /// Function to be run for the [analyze] task.
 Function analyzeTask = analyzeTaskImpl;
 
-/// Set to `true` to not fail the `analyze` task on info level analyzer messages.
+/// Set to `true` to not fail the `analyze` task on info level analyzer
+/// messages.
 bool analyzerIgnoreInfoMessages = false;
 
 /// Default implementation for the [analyze] task.
@@ -129,10 +131,10 @@ Function coverageTask = coverageTaskImpl;
 
 /// Default implementation for the [coverage] task.
 void coverageTaskImpl() {
-  final String coverageToken = io.Platform.environment['REPO_TOKEN'];
+  final coverageToken = io.Platform.environment['REPO_TOKEN'];
 
   if (coverageToken != null) {
-    new PubApp.global('dart_coveralls').run(
+    PubApp.global('dart_coveralls').run(
         ['report', '--retry', '2', '--exclude-test-files', 'test/all.dart']);
   } else {
     log('Skipping coverage task: no environment variable `REPO_TOKEN` found.');
@@ -145,31 +147,33 @@ Function formatTask = formatTaskImpl;
 
 /// Default implementation for the `format` task.
 void formatTaskImpl() {
-  new PubApp.global('dart_style').run(
+  PubApp.global('dart_style').run(
       ['-w']..addAll(existingSourceDirs.map((dir) => dir.path)),
       script: 'format');
 }
 
-/// Indirection that allows a custom function to be assigned for the `lint` task.
+/// Indirection that allows a custom function to be assigned for the `lint`
+/// task.
 @Deprecated('Linter rules are checked in the analyze task already')
 // ignore: deprecated_member_use
 Function lintTask = lintTaskImpl;
 
 /// Default implementation for the `lint` task.
 @Deprecated('Linter rules are checked in the analyze task already')
-String lintTaskImpl() {
-  return new PubApp.global('linter').run((['--stats', '-ctool/lintcfg.yaml']
-    ..addAll(existingSourceDirs.map((dir) => dir.path))));
-}
+String lintTaskImpl() => PubApp.global('linter').run([
+      '--stats',
+      '-ctool/lintcfg.yaml'
+    ]..addAll(existingSourceDirs.map((dir) => dir.path)));
 
-/// Indirection that allows a custom function to be assigned for the `test` task.
+/// Indirection that allows a custom function to be assigned for the `test`
+/// task.
 Function testTask = testTaskImpl;
 
 /// Default implementation for the `test` task.
 dynamic testTaskImpl(String preset,
-    {bool runPubServe: false,
-    List<String> pubServeParameters: const <String>[],
-    bool runSelenium: false}) async {
+    {bool runPubServe = false,
+    List<String> pubServeParameters = const <String>[],
+    bool runSelenium = false}) async {
 //  final seleniumJar = io.Platform.environment['SELENIUM_JAR'];
 
   final environment = <String, String>{};
@@ -184,7 +188,7 @@ dynamic testTaskImpl(String preset,
   PubServe pubServe;
   try {
     if (runPubServe) {
-      pubServe = new PubServe();
+      pubServe = PubServe();
       log('start pub serve');
       await pubServe.start(directories: const ['test']);
       // ignore: unawaited_futures
@@ -207,8 +211,8 @@ dynamic testTaskImpl(String preset,
 //    if (runPubServe) {
 //      args.add('--pub-serve=${pubServe.directoryPorts['test']}');
 //    }
-    new PubApp.local('test').run(['--preset', preset],
-        runOptions: new RunOptions(environment: environment));
+    PubApp.local('test').run(['--preset', preset],
+        runOptions: RunOptions(environment: environment));
   } finally {
     if (pubServe != null) {
       pubServe.stop();
@@ -225,6 +229,7 @@ dynamic testTaskImpl(String preset,
 /// Indirection that allows a custom function to be assigned for the `travis`
 /// task.
 // The default implementation does nothing.
+// ignore: prefer_function_declarations_over_variables
 Function travisTask = () {};
 
 /// Indirection that allows a custom function to be assigned for the
@@ -236,7 +241,7 @@ dynamic travisPrepareTaskImpl() async {
   log('travisPrepareTaskImpl');
   if (doInstallContentShell) {
     log('contentShell');
-    new PubApp.global('bwu_dart_archive_downloader').run([
+    PubApp.global('bwu_dart_archive_downloader').run([
       'down',
       '-fcontent_shell',
       '-dcontent_shell',
@@ -276,7 +281,7 @@ String get channelFromTravisDartVersion {
 }
 
 /// Typedef for the function that discovers sub-projects.
-typedef List<io.Directory> GetSubProjects();
+typedef GetSubProjects = List<io.Directory> Function();
 
 /// Configure the function used to discover sub-projects.
 GetSubProjects getSubProjects = getSubProjectsImpl;
@@ -295,11 +300,11 @@ Function checkSubProjects = checkSubProjectsImpl;
 
 /// Default implementation for `checkSubProjects.
 void checkSubProjectsImpl() {
-  subProjects.forEach((p) {
+  for (final p in subProjects) {
     log('=== check sub-project: ${p.path} ===');
     run('dart',
         arguments: ['-c', 'tool/grind.dart', 'check'],
-        runOptions: new RunOptions(
+        runOptions: RunOptions(
             workingDirectory: p.path, includeParentEnvironment: true));
-  });
+  }
 }

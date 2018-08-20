@@ -1,7 +1,6 @@
 # Don’t commit the following directories created by pub.
-.pub/
+.dart_tool/
 build/
-packages
 .packages
 # used for travis (might be created during test/development)
 _install
